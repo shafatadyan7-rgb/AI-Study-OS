@@ -132,12 +132,17 @@ describe('API routes authenticate before querying', () => {
   });
 
   for (const route of routes) {
-    const rel = route.split('src/app/api/')[1];
+    // `route` comes from path.join(), which uses '\' on Windows and '/' on
+    // POSIX. Both the display-name split below and the auth-entry check
+    // further down assume '/', so normalize once up front rather than
+    // duplicating the same OS-dependent fix in two places.
+    const normalized = route.replace(/\\/g, '/');
+    const rel = normalized.split('src/app/api/')[1];
     it(`${rel} calls requireUser or is an auth entry point`, () => {
       const src = readFileSync(route, 'utf8');
       // login/signup have no session yet by definition; logout must work even with
       // an expired or missing cookie, so all three are legitimate auth entry points.
-      const isAuthEntry = /api\/auth\/(login|signup|logout)/.test(route);
+      const isAuthEntry = /api\/auth\/(login|signup|logout)/.test(normalized);
       if (isAuthEntry) return;
       expect(src).toMatch(/requireUser|requireRole/);
     });
